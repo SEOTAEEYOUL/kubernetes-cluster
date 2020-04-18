@@ -1,6 +1,10 @@
 # Kubernetes cluster
 A vagrant script for setting up a Kubernetes cluster using Kubeadm
 
+## Version
+   * **Docker 19.3**
+   * **Kubernetes 1.17.2**
+
 ## Pre-requisites
 
  * **[Vagrant 2.1.4+](https://www.vagrantup.com)** - **Vagrant 2.2.7**
