@@ -1,0 +1,611 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# :box_version => "20180831.0.0",
+
+# 192.168.120.XXX 192.168.232.XXX" -- 차단 대역대
+APISERVER_IP="192.128.0.11"
+K8S_USER="vagrant"
+VAGRANT_ROOT = File.dirname(File.expand_path(__FILE__))
+file_to_disk = File.join(VAGRANT_ROOT, 'filename.vdi')
+CLUSTER_CIDR="10.128.0.0/16"
+POD_CIDR="10.129.0.0/16"
+# SERVICE_CIDR="10.128.0.0/12"
+
+servers = [
+    {
+        :name => "k8s-master",
+        :type => "master",
+        :box => "ubuntu/xenial64",
+        :box_version => "20200229.0.0",        
+        :eth1 => "192.128.0.11",
+        :mem => "4096",
+        :cpu => "2",
+        :disk_size => "10GB",
+        :disk_filename => "masterdisk.vdi"
+    },
+    {
+        :name => "k8s-node-1",
+        :type => "node",
+        :box => "ubuntu/xenial64",
+        :box_version => "20200229.0.0",
+        :eth1 => "192.128.0.12",
+        :mem => "4096",
+        :cpu => "2",
+        :disk_size => "10BG",
+        :disk_filename => "node1disk.vdi"
+    },
+    {
+        :name => "k8s-node-2",
+        :type => "node",
+        :box => "ubuntu/xenial64",
+        :box_version => "20200229.0.0",
+        :eth1 => "192.128.0.13",
+        :mem => "4096",
+        :cpu => "2",
+        :disk_size => "10GB",
+        :disk_filename => "node2disk.vdi"
+    },
+    {
+        :name => "k8s-admin",
+        :type => "admin",
+        :box => "ubuntu/xenial64",
+        :box_version => "20200229.0.0",        
+        :eth1 => "192.128.0.10",
+        :mem => "1024",
+        :cpu => "1",
+        :disk_size => "10GB",
+        :disk_filename => "admindisk.vdi"
+    }
+]
+
+# This script to install k8s using kubeadm will get executed after a box is provisioned
+$configureBox = <<-SCRIPT
+
+    # set hostname
+    cat >> /etc/hosts <<EOF
+192.128.0.10  k8s-admin
+192.128.0.11  k8s-master
+192.128.0.12  k8s-node-1
+192.128.0.13  k8s-node-2
+EOF
+
+    # bridged traffic to iptables is enabled for kube-router. - 2020.02.05
+    cat >> /etc/ufw/sysctl.conf <<EOF
+net/bridge/bridge-nf-call-ip6tables = 1
+net/bridge/bridge-nf-call-iptables  = 1
+net/bridge/bridge-nf-call-arptables = 1
+EOF
+    sysctl --system
+
+    # add nameserver
+    cat >> /etc/resolvconf/resolv.conf.d/tail <<EOF
+nameserver 8.8.4.4
+nameserver 8.8.8.8
+localhost, 127.0.0.0/53, :::1
+EOF
+    resolvconf -u
+
+
+    # 2020.02.05
+    export DEBIAN_FRONTEND=noninteractive
+    # sudo vbox-uninstall-guest-additions
+
+    # install docker v19.03
+    # reason for not using docker provision is that it always installs latest version of the docker, but kubeadm requires 19.03 or older
+    apt-get update
+
+
+    apt-get install -y apt-transport-https ca-certificates curl software-properties-common ebtables ethtool sshpass jq
+
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+    add-apt-repository "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable"
+    apt-get update && apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 19.03 | head -1 | awk '{print $3}')
+
+    # run docker commands as vagrant user (sudo not required)
+    usermod -aG docker vagrant
+
+    # install kubeadm
+    # apt-get install -y apt-transport-https curl
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+    cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+
+    apt-get update
+    apt-get install -y kubelet kubeadm kubectl
+    apt-mark hold kubelet kubeadm kubectl
+
+    # kubelet requires swap off
+    swapoff -a
+
+    # keep swap off after reboot
+    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+    # installing calicoctl
+    curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.11.2/calicoctl
+    chmod +x calicoctl
+    mv -v calicoctl /usr/local/bin
+
+
+    # ip of this box
+    IP_ADDR=`ifconfig enp0s8 | grep Mask | awk '{print $2}'| cut -f2 -d:`
+    # set node-ip
+    sudo sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" /etc/default/kubelet
+    sudo systemctl restart kubelet
+
+    # required for setting up password less ssh between k8s VMs
+    sudo sed -i "/^[^#]*PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+    # sudo service sshd restart
+    sudo systemctl restart sshd
+
+    cat <<EoF >> /home/vagrant/.profile
+set -o vi
+
+PATH=.:/home/vagrant/bin:$PATH; export PATH
+alias ls="ls -xF"
+alias rm="rm -i"
+
+alias k="kubectl"
+complete -F __start_kubectl k
+
+alias kc="kubectl -n kube-system"
+alias token="kubectl -n kube-system describe secret \$(kubectl -n kube-system get secret | grep admin-user | awk \'{print \$1}\')"
+
+source <(kubectl completion bash)
+
+export CALICO_DATASTORE_TYPE=kubernetes
+export CALICO_KUBECONFIG=~/.kube/config 
+export HELM_HOME=~/.helm
+EoF
+
+    sudo --user=vagrant mkdir /home/vagrant/.kube
+
+    kubectl completion bash >/etc/bash_completion.d/kubectl
+
+    sudo --user=vagrant mkdir /home/vagrant/bin
+    chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/bin
+
+
+
+    # pod network add-on
+    # apt-get install -y firewall-config
+    # firewall-cmd --permanent --zone=public --add-port=179/tcp
+    # firewall-cmd --reload
+
+    # DOWNLOAD AND INSTALL Helm Client & Helm Repogitory
+    mkdir -p ~/helm
+    cd ~/helm
+    curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > ~/helm/get_helm.sh
+    chmod +x ~/helm/get_helm.sh
+    ~/helm/get_helm.sh
+
+    sudo -u vagrant helm init --client-only
+
+    # ADD THE BITNAMI REPOSITORY
+    sudo -u vagrant helm repo add kubernetes-charts https://kubernetes-charts.storage.googleapis.com/
+    sudo -u vagrant helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+    sudo -u vagrant helm repo add bitnami https://charts.bitnami.com/bitnami
+    sudo -u vagrant helm repo add istio.io https://storage.googleapis.com/istio-release/releases/1.4.5/charts/
+ 
+
+    # Harvor
+    sudo -u vagrant helm repo add harbor https://helm.goharbor.io
+    
+
+    helm install --name harvor .
+
+    # DOWNLOAD AND INSTALL ISTIO Client
+    export ISTIO_VERSION=1.4.5
+    curl -L https://istio.io/downloadIstio | sh -
+    cd istio-*
+    cp -v bin/istioctl /usr/local/bin
+
+
+SCRIPT
+
+
+
+$configureMaster = <<-SCRIPT
+    echo "This is master"
+
+    # install dsmasq
+    apt-get install -y dnsmasq
+
+    # ip of this box
+    IP_ADDR=`ifconfig enp0s8 | grep Mask | awk '{print $2}'| cut -f2 -d:`
+
+    # install k8s master ( Start cluster )
+    HOST_NAME=$(hostname -s)
+
+    SERVICE_CIDR="10.128.0.0/16"
+    POD_CIDR="10.129.0.0/16"
+
+    kubeadm init --apiserver-advertise-address=$IP_ADDR --apiserver-cert-extra-sans=$IP_ADDR  --node-name $HOST_NAME --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR
+
+    # copying credentials to regular user - vagrant
+    sudo --user=vagrant mkdir -p /home/vagrant/.kube
+    cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+    chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
+
+    # Taint the master node for allowing deployment
+    # Taints:             node-role.kubernetes.io/master:NoSchedule
+    # Taints:             <none>
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+
+    # Deploy Pod Network
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+    # Configure flannel
+    # curl -o kube-flannel.yml https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
+    # sed -i.bak 's|"/opt/bin/flanneld",|"/opt/bin/flanneld", "--iface=enp0s8",|' kube-flannel.yml
+    # kubectl create -f kube-flannel.yml
+
+
+    # install Calico pod network addon
+    # kubectl apply -f https://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+    kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+    # Installing with the Kubernetes API datastore—50 nodes or less
+    # curl https://docs.projectcalico.org/v3.9/manifests/calico.yaml -O
+    curl https://docs.projectcalico.org/manifests/calico.yaml -O
+
+    sed -i -e "s?192.128.0.0/16?$POD_CIDR?g" calico.yaml
+    kubectl apply -f calico.yaml
+
+    # Installing with the Kubernetes API datastore—more than 50 nodes
+    # curl https://docs.projectcalico.org/v3.9/manifests/calico-typha.yaml -o calico.yaml
+    # kubectl apply -f calico-typha.yaml
+
+    # Installing with the etcd datastore
+    # curl https://docs.projectcalico.org/v3.9/manifests/calico-etcd.yaml -o calico-etcd.yaml
+    # kubectl apply -f calico-etcd.yaml
+
+
+    kubeadm token create --print-join-command >> /etc/kubeadm_join_cmd.sh
+    chmod +x /etc/kubeadm_join_cmd.sh
+
+    # # required for setting up password less ssh between guest VMs
+    # sudo sed -i "/^[^#]*PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+    # # sudo service sshd restart
+    # sudo systemctl restart sshd
+
+
+    # Kubernetes Metrics Server
+    export DOWNLOAD_URL=$(curl -Ls "https://api.github.com/repos/kubernetes-sigs/metrics-server/releases/latest" | jq -r .tarball_url)
+    export DOWNLOAD_VERSION=$(grep -o '[^/v]*$' <<< $DOWNLOAD_URL)
+    curl -Ls $DOWNLOAD_URL -o metrics-server-$DOWNLOAD_VERSION.tar.gz
+    mkdir metrics-server-$DOWNLOAD_VERSION
+    tar -xzf metrics-server-$DOWNLOAD_VERSION.tar.gz --directory metrics-server-$DOWNLOAD_VERSION --strip-components 1
+    kubectl apply -f metrics-server-$DOWNLOAD_VERSION/deploy/1.8+/
+    kubectl get deployment metrics-server -n kube-system
+
+    # metric server 에 InternalIP 사용을 추가하여 재기동 필요
+    # $ kubectl -n kube-system edit deploy metrics-server
+    # spec:
+    #   containers:
+    #   - image: k8s.gcr.io/metrics-server-amd64:v0.3.6
+    #     args:
+    #     - --kubelet-preferred-address-types=InternalIP
+    #     - --kubelet-insecure-tls
+    #     - --v=10
+
+
+
+    # Helm
+    # mkdir -p ~/helm
+    # cd ~/helm
+    # curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > ~/helm/get_helm.sh
+    # chmod +x ~/helm/get_helm.sh
+    # ~/helm/get_helm.sh
+
+    # kubectl -n kube-system create sa tiller
+    cat <<EoF > ~/helm/tiller-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tiller
+  namespace: kube-system
+EoF
+    kubectl apply -f ~/helm/tiller-sa.yaml
+
+
+    # kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+    cat <<EoF > ~/helm/tiller-crb.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: tiller
+    namespace: kube-system
+EoF
+    # INSTALL HELM
+    kubectl apply -f ~/helm/tiller-crb.yaml
+    helm init --service-account tiller --wait
+
+
+    # Install Dashboard
+
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta4/aio/deploy/recommended.yaml
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc5/aio/deploy/recommended.yaml
+    
+
+    # kubectl port-forward -n kubernetes-dashboard service/kubernetes-dashboard 10443:443
+
+    # Admin privileges
+    # IMPORTANT: Make sure that you know what you are doing before proceeding. Granting admin privileges to Dashboard's Service Account might be a security risk.
+    # Vagrant Up 이후 삭제 후 생성해 주어야 함
+    # kubectl -n kubernetes-dashboard delete clusterrolebinding kubernetes-dashboard
+    cat <<EOF | kubectl create -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+EOF
+
+    # Creating sample user
+    cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+    cat <<EOF | kubectl create -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+
+    # Self-signed certificate
+    # mkdir $HOME/certs
+    # cd $HOME/certs
+    #
+    # openssl genrsa -des3 -passout pass:over4chars -out dashboard.pass.key 2048
+    # openssl rsa -passin pass:over4chars -in dashboard.pass.key -out dashboard.key
+    # # Writing RSA key
+    # rm dashboard.pass.key
+    # openssl req -new -key dashboard.key -out dashboard.csr
+    # # Generate SSL certificate
+    # openssl x509 -req -sha256 -days 365 -in dashboard.csr -signkey dashboard.key -out dashboard.crt
+    # # The dashboard.crt file is your certificate suitable for use with Dashboard along with the dashboard.key private key.
+    #
+    # #
+    # kubectl create secret generic kubernetes-dashboard-certs --from-file=$HOME/certs -n kubernetes-dashboard
+
+    # kubectl -n kubernetes-dashboard edit deploy kubernetes-dashboard
+    # Under Deployment section, add arguments to pod definition, it should look as follows:
+    #  containers:
+    #  - args:
+    #    - --tls-cert-file=/tls.crt
+    #    - --tls-key-file=/tls.key
+
+
+
+
+    # kubectl create clusterrolebinding kubernetes-dashbaord-admin --clusterrole=cluter-admin --serviceaccount=kubernetes-dashboard:kubernetes-dashboard
+    # kubectl create clusterrolebinding kubernetes-dashbaord-admin --clusterrole=cluter-admin --serviceaccount=kube-system:kubernetes-dashboard
+    # kubectl create clusterrolebinding kubernetes-dashbaord-admin --clusterrole=cluter-admin --serviceaccount=default:kubernetes-dashboard
+
+    # nohup kubectl proxy --port=8080 --address='0.0.0.0' --disable-filter=true &
+
+    cat >> cat <<EoF >> /home/vagrant/.profile
+alias proxy="kubectl proxy --port=8080 --address='0.0.0.0' --disable-filter=true &"
+EOF
+
+    # access dashboard at
+    # http://localhost:8080/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/.
+
+    # kubectl -n kubernetes-dashboard edit deploy kubernetes-dashboard
+    # spec:
+    #   containers:
+    #   - args:
+    #     - --enable-skip-login
+    #     - --disable-settings-authorizer
+    #     - --auto-generate-certificates
+
+    #     cat >> /var/lib/kubelet/kubeadm-flags.env <<EOF
+    # KUBELET_EXTRA_ARGS=--cgroup-driver=systemd
+    # EOF
+    # systemctl daemon-reload
+    # systemctl restart kubelet
+
+    # Install Ingress Controller
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/cloud-generic.yaml
+    
+    # kubectl get pods -n ingress-nginx
+    
+    # L4
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/aws/service-l4.yaml
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/aws/patch-configmap-l4.yaml
+    
+    # L7
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/aws/service-l7.yaml
+    # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/aws/patch-configmap-l7.yaml
+
+    # Bare-metal - Using NodePort
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
+
+    chown $(id -u vagrant):$(id -g vagrant) -R /home/vagrant
+
+SCRIPT
+
+
+
+$configureNode = <<-SCRIPT
+    echo "This is worker"
+
+
+
+    # Add Worker Node to the Cluster
+    sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@192.128.0.11:/etc/kubeadm_join_cmd.sh .
+    # sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@k8s-master:/etc/kubeadm_join_cmd.sh .
+    
+    sh ./kubeadm_join_cmd.sh
+
+    # Configure kubectl
+    # copying credentials to regular user - vagrant
+    sudo --user=vagrant mkdir -p /home/vagrant/.kube
+    sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@192.128.0.11:/home/vagrant/.kube/config /home/vagrant/.kube/config
+    # sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@k8s-master:/home/vagrant/.kube/config /home/vagrant/.kube/config
+    chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
+    export KUBECONFIG=/home/vagrant/.kube/config
+    
+    cat << EOF >> /home/vagrant/.profile
+export KUBECONFIG=/home/vagrant/.kube/config
+EOF
+
+    chown $(id -u vagrant):$(id -g vagrant) -R /home/vagrant
+
+
+SCRIPT
+
+
+$configureAdmin = <<-SCRIPT
+    echo "This is admin"
+
+
+    # copying credentials to regular user - vagrant
+    sudo --user=vagrant mkdir -p /home/vagrant/.kube
+    sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@192.128.0.11:/home/vagrant/.kube/config /home/vagrant/.kube/config
+    # sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@k8s-master:/home/vagrant/.kube/config /home/vagrant/.kube/config
+    chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
+    export KUBECONFIG=/home/vagrant/.kube/config
+    echo "export KUBECONFIG=/home/vagrant/.kube/config" /home/vagrant/.profile
+
+    cat <<EOF > /home/vagrant/bin/get-token.sh
+#!/bin/bash
+echo "# Bearer Token"
+kubectl -n kubernetes-dashboard describe secret \$(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print \$1}')
+EOF
+
+    sudo chmod +x /home/vagrant/bin/get-token.sh
+    chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/bin/get-token.sh
+
+
+
+
+    # INSTALL ISTIO
+    
+
+    # install Istio using the Helm
+    # kubectl create namespace istio-system
+    # helm template install/kubernetes/helm/istio --name istio --namespace istio-system --set gateways.istio-ingressgateway.type=NodePort | kubectl apply -f -
+
+    # Install Istio using the default profile
+    # istioctl manifest apply --set profile=demo
+    istioctl manifest apply --set profile=demo --set values.global.mtls.enabled=true --set values.global.controlPlaneSecurityEnabled=true
+    # Display the list of available profiles
+    istioctl profile list
+    # kubectl label namespace default istio-injection=enabled
+
+
+    # Deploy Sample Apps
+    # kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
+    # # Next we'll define the virtual service and ingress gateway
+    # kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+    # kubectl get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' -n istio-system ; echo
+    # kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml
+    # kubectl apply -f samples/bookinfo/networking/virtual-service-reviews-50-v3.yaml
+
+    # MONITORING & VISUTALIZE
+    # curl -LO https://eksworkshop.com/servicemesh/deploy.files/istio-telemetry.yaml
+    # kubectl apply -f istio-telemetry.yaml
+    # kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 8080:3000 &
+    
+    cat << EOF >> /home/vagrant/.profile
+export KUBECONFIG=/home/vagrant/.kube/config
+EOF
+
+    cat << EOF >> /home/vagrant/.profile
+alias ingress=\'kubectl get pods --all-namespaces -l app.kubernetes.io/name=ingress-nginx --watch\'
+EOF
+
+    cat << EOF > /home/vagrant/bin/get-ingress-version.sh
+#!/bin/bash
+
+POD_NAMESPACE=ingress-nginx
+POD_NAME=\$(kubectl get pods -n \$POD_NAMESPACE -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[0].metadata.name}')
+
+kubectl exec -it \$POD_NAME -n \$POD_NAMESPACE -- /nginx-ingress-controller --version
+EOF
+
+    # Harbor
+    sudo -u vagrant helm fetch harbor/harbor --untar
+
+
+    chown $(id -u vagrant):$(id -g vagrant) -R /home/vagrant
+SCRIPT
+
+
+
+
+Vagrant.configure("2") do |config|
+
+    servers.each do |opts|
+        config.vm.define opts[:name] do |config|
+
+            config.vm.box         = opts[:box]
+            config.vm.box_version = opts[:box_version]
+            config.vm.hostname    = opts[:name]
+            config.vm.network :private_network, ip: opts[:eth1]
+            # config.disksize.size = opts[:disksize]
+
+            config.vm.provider "virtualbox" do |v|
+
+                v.name = opts[:name]
+            	v.customize ["modifyvm", :id, "--groups", "/k8s"]
+                v.customize ["modifyvm", :id, "--memory", opts[:mem]]
+                v.customize ["modifyvm", :id, "--cpus", opts[:cpu]]                
+
+            end
+
+            # we cannot use this because we can't install the docker version we want - https://github.com/hashicorp/vagrant/issues/4871
+            # config.vm.provision "docker"
+
+            config.vm.provision "shell", inline: $configureBox
+
+            if opts[:type] == "master"
+                 config.vm.provision "shell", inline: $configureMaster
+            end
+            if opts[:type] == "node"                
+                config.vm.provision "shell", inline: $configureNode
+            end
+            if opts[:type] == "admin"                
+                config.vm.provision "shell", inline: $configureAdmin
+            end
+
+        end
+
+    end
+
+end 
