@@ -3,8 +3,8 @@ A vagrant script for setting up a Kubernetes cluster using Kubeadm
 
 ## Pre-requisites
 
- * **[Vagrant 2.1.4+](https://www.vagrantup.com)**
- * **[Virtualbox 5.2.18+](https://www.virtualbox.org)**
+ * **[Vagrant 2.1.4+](https://www.vagrantup.com)** - **Vagrant 2.2.7**
+ * **[Virtualbox 5.2.18+](https://www.virtualbox.org)** -> **Virtualbox 6.1.6"
 
 ## How to Run
 
