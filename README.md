@@ -12,7 +12,7 @@ A vagrant script for setting up a Kubernetes cluster using Kubeadm
 
 ## How to Run
 
-Execute the following vagrant command to start a new Kubernetes cluster, this will start one master and two nodes:
+Execute the following vagrant command to start a new Kubernetes cluster, this will start one admin(bastion server), one master and two nodes:
 
 ```
 vagrant up
