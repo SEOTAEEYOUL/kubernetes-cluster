@@ -25,7 +25,7 @@ If more than two nodes are required, you can edit the servers array in the Vagra
 ```
 servers = [
     {
-        :name => "k8s-node-3",
+        :name => "k8s-master",
         :type => "node",
         :box => "ubuntu/xenial64",
         :box_version => "20200229.0.0",
