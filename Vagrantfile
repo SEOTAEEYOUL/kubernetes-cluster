@@ -60,7 +60,7 @@ Vagrant.configure("2") do |config|
       master.vm.provision "shell", privileged: true, path: "prepare-kubectl.sh"
 
       # install cni.
-      master.vm.provision "shell", path: "install-cni-flannel.sh"
+      master.vm.provision "shell", path: "install-cni-calico.sh"
 
     end
   end
