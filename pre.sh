@@ -1,4 +1,3 @@
-  
 #!/bin/bash
 
 # Update apt registry.

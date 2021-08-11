@@ -104,6 +104,20 @@ above with their current state. For more information about a specific
 VM, run `vagrant status NAME`.
 ```
 
+## FAQ
+### Why Bento ?
+- Because HashiCorp (the makers of Vagrant) recommends the Bento Ubuntu.
+
+### Why are the versions fixed?
+- Because major changes over the packages may broke the setup.
+
+### **"Call to WHvSetupPartition failed"** : 오류 발생시 조치할 사항?
+- **Hyper-V** 를 비활성화 함
+  - RUN > CMD > bcdedit /set hypervisorlaunchtype off, then reboot your machine.
+
+### **Hyper-V** 재 활성화 하기
+- RUN > CMD > bcdedit /set hypervisorlaunchtype auto, then reboot your machine.
+
 ## Licensing
 
 [Apache License, Version 2.0](http://opensource.org/licenses/Apache-2.0).  
@@ -143,6 +157,7 @@ Chocolatey installed 1/1 packages.
 kubectl version --client
 Client Version: version.Info{Major:"1", Minor:"22", GitVersion:"v1.22.0", GitCommit:"c2b5237ccd9c0f1d600d3072634ca66cefdf272f", GitTreeState:"clean", BuildDate:"2021-08-04T18:03:20Z", GoVersion:"go1.16.6", Compiler:"gc", Platform:"windows/amd64"}
 ```
+
 
 ## 실행로그
 ```

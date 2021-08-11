@@ -12,3 +12,6 @@ OUTPUT_FILE=/vagrant/join.sh
 rm -rf /vagrant/join.sh
 kubeadm token create --print-join-command > /vagrant/join.sh
 chmod +x $OUTPUT_FILE
+
+echo "join.sh"
+cat /vagrant/join.sh

@@ -12,6 +12,17 @@ Vagrant.configure("2") do |config|
   MASTER_NODE_IP_START = ENV['MASTER_NODE_IP_START']
   WORKER_NODE_IP_START = ENV['WORKER_NODE_IP_START']
 
+  # 2021-08-11 추가 #########################################
+  # 192.168.120.XXX 192.168.232.XXX" -- 차단 대역대
+  APISERVER_IP="192.128.0.11"
+  K8S_USER="vagrant"
+  VAGRANT_ROOT = File.dirname(File.expand_path(__FILE__))
+  file_to_disk = File.join(VAGRANT_ROOT, 'filename.vdi')
+  CLUSTER_CIDR="10.128.0.0/16"
+  POD_CIDR="10.129.0.0/16"
+  # SERVICE_CIDR="10.128.0.0/12
+  #########################################################
+
   # set variables
   master_node_ip = ''
   worker_node_ip = ''
@@ -37,7 +48,7 @@ Vagrant.configure("2") do |config|
 
       master_node_ip = "#{MASTER_NODE_IP_START}#{i}"
       master.vm.network "private_network", ip: "#{master_node_ip}"
-      master.vm.hostname = "master"
+      master.vm.hostname = "k8s-master"
 
       # init master node.
       master.vm.provision "shell", path: "init-master-node.sh", env: {"NODE_IP" => "#{master_node_ip}"}
@@ -59,7 +70,7 @@ Vagrant.configure("2") do |config|
 
       worker_node_ip = "#{WORKER_NODE_IP_START}#{i}"
       node.vm.network "private_network", ip: "#{worker_node_ip}"
-      node.vm.hostname = "worker#{i}"
+      node.vm.hostname = "k8s-worker-#{i}"
 
       # init slave node.
       node.vm.provision "shell", path: "init-worker-node.sh", env: {"NODE_IP" => "#{worker_node_ip}"}
