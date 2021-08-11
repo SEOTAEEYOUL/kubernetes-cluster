@@ -1,9 +1,6 @@
 #!/bin/bash
 
 
-SERVICE_CIDR="10.128.0.0/16"
-POD_CIDR="10.129.0.0/16"
-
 # Environment="KUBELET_NETWORK_ARGS=--network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 
 # Deploying Calico on an RBAC enabled cluster, first apply the ClusterRole and ClusterRoleBinding specs:
@@ -13,5 +10,10 @@ POD_CIDR="10.129.0.0/16"
 # Install Calico
 # # Installing with the Kubernetes API datastore—50 nodes or less
 # curl -LO https://docs.projectcalico.org/v2.5/getting-started/kubernetes/installation/hosted/calico.yaml
-curl https://docs.projectcalico.org/manifests/calico.yaml -O
-kubectl apply -f calico.yaml
+# curl https://docs.projectcalico.org/manifests/calico.yaml -O
+# kubectl apply -f calico.yaml
+
+# Install Calico
+kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+

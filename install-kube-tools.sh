@@ -15,7 +15,8 @@ echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https:/
 apt-get update
 
 # Install kubelet, kubeadm and kubectl.
-apt-get install -y kubelet=1.21.2-00 kubeadm=1.21.2-00 kubectl=1.21.2-00
+# apt-get install -y kubelet=1.21.2-00 kubeadm=1.21.2-00 kubectl=1.21.2-00
+apt-get install -y kubelet kubeadm kubectl
 
 # Hold the Kubernetes components at this specific version.
 apt-mark hold kubelet kubeadm kubectl
