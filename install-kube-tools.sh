@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install packages to allow apt to use a repository over HTTPS
-apt-get install -y apt-transport-https curl
+apt-get install -y apt-transport-https curl jq tmux
 
 # Add Kubernetes apt repository.
 

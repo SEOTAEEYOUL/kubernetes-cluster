@@ -1,7 +1,12 @@
 #!/bin/bash
 
+
+# install k8s master ( Start cluster )
+HOST_NAME=$(hostname -s)
+
 # Install kubernetes via kubeadm.
-kubeadm init --apiserver-advertise-address=$NODE_IP
+# kubeadm init --apiserver-advertise-address=$NODE_IP
+kubeadm init --apiserver-advertise-address=$NODE_IP --apiserver-cert-extra-sans=$NODE_IP  --node-name $HOST_NAME --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR
 
 # Hostname -i must return a routable address on second (non-NATed) network interface.
 # @see http://kubernetes.io/docs/getting-started-guides/kubeadm/#limitations

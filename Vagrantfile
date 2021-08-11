@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", path: "post.sh"
 
   (1..MASTER_NODE_COUNT).each do |i|
-    config.vm.define "master" do |master|
+    config.vm.define "k8s-master" do |master|
 
       master_node_ip = "#{MASTER_NODE_IP_START}#{i}"
       master.vm.network "private_network", ip: "#{master_node_ip}"
@@ -66,14 +66,14 @@ Vagrant.configure("2") do |config|
   end
 
   (1..WORKER_NODE_COUNT).each do |i|
-    config.vm.define "worker#{i}" do |node|
+    config.vm.define "k8s-worker-#{i}" do |worker|
 
       worker_node_ip = "#{WORKER_NODE_IP_START}#{i}"
-      node.vm.network "private_network", ip: "#{worker_node_ip}"
-      node.vm.hostname = "k8s-worker-#{i}"
+      worker.vm.network "private_network", ip: "#{worker_node_ip}"
+      worker.vm.hostname = "k8s-worker-#{i}"
 
       # init slave node.
-      node.vm.provision "shell", path: "init-worker-node.sh", env: {"NODE_IP" => "#{worker_node_ip}"}
+      worker.vm.provision "shell", path: "init-worker-node.sh", env: {"NODE_IP" => "#{worker_node_ip}"}
 
     end
   end
