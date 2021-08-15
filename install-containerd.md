@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Install packages to allow apt to use a repository over HTTPS.
+apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+
+# containerd 설치를 위한 필수 구성 요성 설치 및 구성
+cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# 필요한 sysctl 파라미터를 설정하면 재부팅 후에도 유지된다.
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+azureuser@vm-k8s-master:~$ sudo modprobe br_netfilter
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+# 재부팅하지 않고 sysctl 파라미터 적용
+sudo sysctl --system
+
+# Install Containerd.
+apt install containerd
+mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+
+# systemd cgroup 드라이버 사용
+# SystemdCgroup = false -> true 로 설정
+sudo sed -i 'sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl restart containerd
+
+# Restart and enable docker service.
+systemctl daemon-reload
+systemctl start containerd
+systemctl enable containerd
+
+# Hold containerd at this specific version.
+apt-mark hold containerd
