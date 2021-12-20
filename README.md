@@ -20,9 +20,13 @@ A vagrant script for setting up a Kubernetes cluster using Kubeadm
  * **[Virtualbox 6.1.26+](https://www.virtualbox.org)**   
  * **[Discover Vagrant Boxes](https://app.vagrantup.com/boxes/search)**  
 
-### Install the plugin for Vagrant to ability to use environment files.
+### Install the plugin for Vagrant to ability to use environment files.(and ...)
 ```
 vagrant plugin install vagrant-env
+vagrant plugin install vagrant-disksize
+vagrant plugin install vagrant-vbguest
+vagrant plugin install vagrant-hostmanager
+vagrant plugin list
 ```
 ```
 Installing the 'vagrant-env' plugin. This can take a few minutes...
@@ -30,6 +34,13 @@ Fetching dotenv-deployment-0.0.2.gem
 Fetching dotenv-0.11.1.gem
 Fetching vagrant-env-0.0.3.gem
 Installed the plugin 'vagrant-env (0.0.3)'!
+```
+```
+vagrant plugin list
+vagrant-disksize (0.1.3, global)
+vagrant-env (0.0.3, global)
+vagrant-hostmanager (1.8.9, global)
+vagrant-vbguest (0.30.0, global)
 ```
 
 ### Customize your own environment file.
