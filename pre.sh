@@ -47,7 +47,7 @@ sudo echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
 sysctl --system
 
 
-# SWAP 제거
+# SWAP 제거, # Turn off swap for kubeadm.
 sudo swapoff -a
 # sed -i '/swap/d' /etc/fstab
 sudo sed -ri '/\sswap\s/s/^#?/#/' /etc/fstab
