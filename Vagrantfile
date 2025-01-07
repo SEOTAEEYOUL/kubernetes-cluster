@@ -4,6 +4,14 @@ Vagrant.configure("2") do |config|
   config.env.enable
 
   config.vbguest.auto_update = true
+  config.vbguest.installer_options = { allow_kernel_upgrade: true }
+
+  # Add reload plugin configuration
+  unless Vagrant.has_plugin?("vagrant-reload")
+    system("vagrant plugin install vagrant-reload")
+    puts "vagrant-reload plugin installed, please try again"
+    exit
+  end
 
 
   # set constants

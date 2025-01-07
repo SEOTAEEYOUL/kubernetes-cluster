@@ -13,7 +13,16 @@
 # curl https://docs.projectcalico.org/manifests/calico.yaml -O
 # kubectl apply -f calico.yaml
 
-# Install Calico
-kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
 
+
+# # Install Calico
+# kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+# kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+
+# 2025-01-07
+curl -O https://raw.githubusercontent.com/gasida/KANS/main/kans3/calico-kans.yaml
+kubectl apply -f calico-kans.yaml
+curl -O https://github.com/projectcalico/calico/releases/download/v3.29.1/calicoctl-linux-amd64 -o calicoctl
+chmod +x calicoctl && mv calicoctl /usr/bin
+calicoctl version

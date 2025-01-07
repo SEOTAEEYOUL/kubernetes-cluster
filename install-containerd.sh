@@ -16,7 +16,6 @@ sudo modprobe br_netfilter
 cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
-azureuser@vm-k8s-master:~$ sudo modprobe br_netfilter
 net.bridge.bridge-nf-call-ip6tables = 1
 EOF
 
@@ -30,7 +29,7 @@ containerd config default | sudo tee /etc/containerd/config.toml
 
 # systemd cgroup 드라이버 사용
 # SystemdCgroup = false -> true 로 설정
-sudo sed -i 'sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 sudo systemctl restart containerd
 
 # Restart and enable docker service.

@@ -13,12 +13,12 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
    * Kubeadm Version: 1.21.2-00
 ### Network Plugin
    * cni-plugins v0.9.1
-   * CNI: Flannel (Latest Version), calico v3.17.4
+   * CNI: Flannel (Latest Version), calico v3.28.1
 
 ## Pre-requisites
 
- * **[Vagrant 2.2.18+](https://www.vagrantup.com)**
- * **[Virtualbox 6.1.26+](https://www.virtualbox.org)**   
+ * **[Vagrant 2.4.3](https://www.vagrantup.com)**
+ * **[Virtualbox 7.1.4](https://www.virtualbox.org)**   
  * **[Discover Vagrant Boxes](https://app.vagrantup.com/boxes/search)**  
 
 #### python core 설치

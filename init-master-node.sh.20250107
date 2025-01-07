@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -e  # Exit on error
 
 # install k8s master ( Start cluster )
 HOST_NAME=$(hostname -s)
