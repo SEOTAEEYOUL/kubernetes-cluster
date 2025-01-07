@@ -1,8 +1,9 @@
 # Kubernetes cluster
-A vagrant script for setting up a Kubernetes cluster using Kubeadm
+Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 
 ## Components Version
-### Image: bento/ubuntu-20.04
+> [boxes - bento/ubuntu-22.04](https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-22.04)
+### Image: bento/ubuntu-22.04
 ### Core
    * Docker Version: 20.10.7~3-0 :: recommaned
    * containerd v1.4.6
@@ -20,39 +21,80 @@ A vagrant script for setting up a Kubernetes cluster using Kubeadm
  * **[Virtualbox 6.1.26+](https://www.virtualbox.org)**   
  * **[Discover Vagrant Boxes](https://app.vagrantup.com/boxes/search)**  
 
+#### python core 설치
+- VirtualBox 설치 문제 해결
+- Missing Dependencies Python Core / win32api 문제 해결
+- Python 을 통해 VirtualBox 를 제어하고자 하는 경우에 필요
+```
+pip install pywin32
+```
+
 ### Install the plugin for Vagrant to ability to use environment files.(and ...)
 ```
 vagrant plugin install vagrant-env
 vagrant plugin install vagrant-disksize
 vagrant plugin install vagrant-vbguest
 vagrant plugin install vagrant-hostmanager
+vagrant plugin install vagrant-reload
+vagrant plugin install vagrant-scp
 vagrant plugin list
 ```
 ```
+PS > vagrant plugin install vagrant-env
 Installing the 'vagrant-env' plugin. This can take a few minutes...
 Fetching dotenv-deployment-0.0.2.gem
 Fetching dotenv-0.11.1.gem
 Fetching vagrant-env-0.0.3.gem
 Installed the plugin 'vagrant-env (0.0.3)'!
+PS > 
 ```
 ```
-vagrant plugin list
+PS > vagrant plugin list
 vagrant-disksize (0.1.3, global)
 vagrant-env (0.0.3, global)
-vagrant-hostmanager (1.8.9, global)
-vagrant-vbguest (0.30.0, global)
+vagrant-hostmanager (1.8.10, global)
+vagrant-reload (0.0.1, global)
+vagrant-scp (0.5.9, global)
+vagrant-vbguest (0.32.0, global)
+PS > 
 ```
 
-### Customize your own environment file.
-- .env
-```
-IMAGE_NAME=bento/ubuntu-18.04
+### vagrant 명령어
+| 명령어 | 설명 | 비고 |   
+|:---|:---|:---|    
+| vagrant status | 가상머신 상태확인 |  |  
+| vagrant suspend | 가상머신 일시정지 |  |  
+| vagrant resume | |  |  
+| vagrant halt | 가상머신 중지 |  |  
+| vagrant destroy |  가상머신 삭제 |  |  
+| vagrant box list | 가상 머신 목록 확인 |  |  
+| vagrant box remove _hasicorp/bionic64_ | 불필요한 가상머신 삭제 |  |  
+| vagrant up | _Vagrantfile_ 에 적힌 내용에 따라 가상 머신 실행 | |  
+| vagrant ssh | ssh 접속 | id:vagrant / pw:vagrant |   
+
+### Vargrant 에서 사용할 환경변수 설정하기
+- 환경변수 설정 파일 : `.env`
+```bash
+# Base Image
+# IMAGE_NAME=ubuntu/xenial64
+IMAGE_NAME=bento/ubuntu-22.04
+BOX_VERSION=202407.23.0
+
+# Resource Allocation
 MEMORY_SIZE_IN_GB=2
 CPU_COUNT=2
+
+# Cluster Configuration
 MASTER_NODE_COUNT=1
 WORKER_NODE_COUNT=2
+# APISERVER_IP="192.128.0.101"
+
+# Network Configuration
 MASTER_NODE_IP_START=192.128.0.10
 WORKER_NODE_IP_START=192.128.0.20
+
+# Kubernetes Network CIDR
+CLUSTER_CIDR="10.128.0.0/16"
 SERVICE_CIDR="10.128.0.0/16"
 POD_CIDR="10.129.0.0/16"
 ```

@@ -3,6 +3,9 @@ Vagrant.configure("2") do |config|
   # enable vagrant-env (.env)
   config.env.enable
 
+  config.vbguest.auto_update = true
+
+
   # set constants
   IMAGE_NAME = ENV['IMAGE_NAME']
   MEMORY_SIZE_IN_GB = ENV['MEMORY_SIZE_IN_GB'].to_i
@@ -11,6 +14,7 @@ Vagrant.configure("2") do |config|
   WORKER_NODE_COUNT = ENV['WORKER_NODE_COUNT'].to_i
   MASTER_NODE_IP_START = ENV['MASTER_NODE_IP_START']
   WORKER_NODE_IP_START = ENV['WORKER_NODE_IP_START']
+  BOX_VERSION = ENV['BOX_VERSION']
 
   # 2021-08-11 추가 #########################################
   # 192.168.120.XXX 192.168.232.XXX" -- 차단 대역대
@@ -28,52 +32,85 @@ Vagrant.configure("2") do |config|
   worker_node_ip = ''
 
   config.vm.box = IMAGE_NAME
+  config.vm.box_version = BOX_VERSION # Ensures compatibility with VirtualBox 7.1.4
 
   config.vm.provider "virtualbox" do |vb|
 
     vb.memory = 1024 * MEMORY_SIZE_IN_GB
     vb.cpus = CPU_COUNT
-
+    vb.customize ["modifyvm", :id, "--groups", "/Kubernetes Cluster"]
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
+  # Provisioning scripts
   config.vm.provision "shell", path: "pre.sh"
 
-  config.vm.provision "shell", path: "install-docker.sh"
-  config.vm.provision "shell", path: "install-kube-tools.sh"
+  # config.vm.provision "shell", path: "install-docker.sh"
+  config.vm.provision "shell", path: "install-containerd.sh"
+  config.vm.provision "shell", path: "install-kube-tools.sh", env: {
+    "KUBERNETES_VERSION" => "1.32"
+  }
 
   config.vm.provision "shell", path: "post.sh"
 
+  # Master nodes
   (1..MASTER_NODE_COUNT).each do |i|
     config.vm.define "k8s-master" do |master|
 
       master_node_ip = "#{MASTER_NODE_IP_START}#{i}"
-      master.vm.network "private_network", ip: "#{master_node_ip}"
+      master.vm.network "private_network",
+                        ip: "#{master_node_ip}",
+                        virtualbox__intnet: true
+      
       master.vm.hostname = "k8s-master"
 
       # init master node.
-      master.vm.provision "shell", path: "init-master-node.sh", env: {"NODE_IP" => "#{master_node_ip}"}
+      master.vm.provision "shell",
+                        path: "init-master-node.sh",
+                        env: {
+                            "NODE_IP" => "#{master_node_ip}",
+                            "APISERVER_IP" => APISERVER_IP,
+                            "POD_CIDR" => POD_CIDR,
+                            "CLUSTER_CIDR" => CLUSTER_CIDR
+                        }
 
       # prepare kubectl for vagrant user
-      master.vm.provision "shell", privileged: false, path: "prepare-kubectl.sh"
+      master.vm.provision "shell",
+                        privileged: false,
+                        path: "prepare-kubectl.sh"
 
       # prepare kubectl for root user
-      master.vm.provision "shell", privileged: true, path: "prepare-kubectl.sh"
+      master.vm.provision "shell",
+                        privileged: true,
+                        path: "prepare-kubectl.sh"
 
       # install cni.
-      master.vm.provision "shell", path: "install-cni-calico.sh"
+      master.vm.provision "shell",
+                        path: "install-cni-calico.sh"
 
     end
   end
 
+  # Worker nodes
   (1..WORKER_NODE_COUNT).each do |i|
     config.vm.define "k8s-worker-#{i}" do |worker|
 
       worker_node_ip = "#{WORKER_NODE_IP_START}#{i}"
-      worker.vm.network "private_network", ip: "#{worker_node_ip}"
+      worker.vm.network "private_network",
+                        ip: "#{worker_node_ip}",
+                        virtualbox__intnet: true
+
       worker.vm.hostname = "k8s-worker-#{i}"
 
       # init slave node.
-      worker.vm.provision "shell", path: "init-worker-node.sh", env: {"NODE_IP" => "#{worker_node_ip}"}
+      worker.vm.provision "shell",
+                        path: "init-worker-node.sh",
+                        env: {
+                            "NODE_IP" => "#{worker_node_ip}",
+                            "APISERVER_IP" => APISERVER_IP
+                        }
 
     end
   end

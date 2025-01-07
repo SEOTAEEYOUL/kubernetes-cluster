@@ -1,7 +1,81 @@
 # vagrant up
-## 출력 로그
+
+## 오류
+### 오류 내용
 ```
-PS D:\workspace\kubernetes-cluster> vagrant up
+PS > vagrant up
+Vagrant failed to initialize at a very early stage:
+
+There was an error loading a Vagrantfile. The file being loaded
+and the error message are shown below. This is usually caused by
+an invalid or undefined variable.
+
+Path: C:/Users/____/.vagrant.d/gems/3.3.6/gems/dotenv-0.11.1/lib/dotenv.rb
+Line number: 0
+Message: undefined method `exists?'
+PS > 
+```
+
+### 조치
+- exists -> exist 로 수정
+```
+sudo sed -i -e 's/exists?/exist?/g' /root/.vagrant.d/gems/3.3.6/gems/dotenv-0.11.1/lib/dotenv.rb
+```
+```ruby
+require 'dotenv/parser'
+require 'dotenv/environment'
+
+module Dotenv
+  def self.load(*filenames)
+    # with(*filenames) { |f| Environment.new(f).apply if File.exists?(f) }
+    with(*filenames) { |f| Environment.new(f).apply if File.exist?(f) }
+  end
+
+  # same as `load`, but raises Errno::ENOENT if any files don't exist
+  def self.load!(*filenames)
+    with(*filenames) { |f| Environment.new(f).apply }
+  end
+
+  # same as `load`, but will override existing values in `ENV`
+  def self.overload(*filenames)
+    # with(*filenames) { |f| Environment.new(f).apply! if File.exists?(f) }
+    with(*filenames) { |f| Environment.new(f).apply! if File.exist?(f) }
+  end
+
+protected
+
+  def self.with(*filenames, &block)
+    filenames << '.env' if filenames.empty?
+
+    filenames.inject({}) do |hash, filename|
+      filename = File.expand_path filename
+      hash.merge(block.call(filename) || {})
+    end
+  end
+end
+```
+
+## 출력 로그
+
+### vagrant status
+```
+PS > vagrant status
+Current machine states:
+
+k8s-master                not created (virtualbox)
+k8s-worker-1              not created (virtualbox)
+k8s-worker-2              not created (virtualbox)
+
+This environment represents multiple VMs. The VMs are all listed
+above with their current state. For more information about a specific
+VM, run `vagrant status NAME`.
+PS > 
+```
+
+
+### vagrant up
+```
+PS > vagrant up
 Bringing machine 'master' up with 'virtualbox' provider...
 Bringing machine 'worker1' up with 'virtualbox' provider...
 Bringing machine 'worker2' up with 'virtualbox' provider...
@@ -971,5 +1045,5 @@ Bringing machine 'worker2' up with 'virtualbox' provider...
     worker2: Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
     worker2:
     worker2: Environment='KUBELET_EXTRA_ARGS=--node-ip=192.128.0.202'
-PS D:\workspace\kubernetes-cluster>
+PS >
 ```
