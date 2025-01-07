@@ -6,12 +6,12 @@ Vagrant.configure("2") do |config|
   config.vbguest.auto_update = true
   config.vbguest.installer_options = { allow_kernel_upgrade: true }
 
-  # Add reload plugin configuration
-  unless Vagrant.has_plugin?("vagrant-reload")
-    system("vagrant plugin install vagrant-reload")
-    puts "vagrant-reload plugin installed, please try again"
-    exit
-  end
+#   # Add reload plugin configuration
+#   unless Vagrant.has_plugin?("vagrant-reload")
+#     system("vagrant plugin install vagrant-reload")
+#     puts "vagrant-reload plugin installed, please try again"
+#     exit
+#   end
 
 
   # set constants
@@ -57,9 +57,11 @@ Vagrant.configure("2") do |config|
 
   # config.vm.provision "shell", path: "install-docker.sh"
   config.vm.provision "shell", path: "install-containerd.sh"
-  config.vm.provision "shell", path: "install-kube-tools.sh", env: {
-    "KUBERNETES_VERSION" => "1.32"
-  }
+  config.vm.provision "shell",
+                    path: "install-kube-tools.sh",
+                    env: {
+                        "K8S_VERSION" => "1.32"
+                    }
 
   config.vm.provision "shell", path: "post.sh"
 
@@ -78,7 +80,7 @@ Vagrant.configure("2") do |config|
       master.vm.provision "shell",
                         path: "init-master-node.sh",
                         env: {
-                            "NODE_IP" => "#{master_node_ip}",
+                            "MASTER_NODE_IP" => "#{master_node_ip}",
                             "APISERVER_IP" => APISERVER_IP,
                             "POD_CIDR" => POD_CIDR,
                             "CLUSTER_CIDR" => CLUSTER_CIDR
@@ -87,16 +89,22 @@ Vagrant.configure("2") do |config|
       # prepare kubectl for vagrant user
       master.vm.provision "shell",
                         privileged: false,
-                        path: "prepare-kubectl.sh"
+                        path: "prepare-k8s-config-for-vagrant.sh"
 
       # prepare kubectl for root user
       master.vm.provision "shell",
                         privileged: true,
-                        path: "prepare-kubectl.sh"
+                        path: "prepare-k8s-config.sh"
 
       # install cni.
       master.vm.provision "shell",
-                        path: "install-cni-calico.sh"
+                        path: "install-cni-calico.sh",
+                        env: {
+                            "SCRIPT_PATH" => "./",
+                            "MASTER_NODE_IP" => "#{master_node_ip}",
+                            "APISERVER_IP" => APISERVER_IP,
+                            "K8S_HOST" => "master.k8s"
+                        }
 
     end
   end

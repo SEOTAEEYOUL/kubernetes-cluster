@@ -7,7 +7,7 @@ HOST_NAME=$(hostname -s)
 
 # Install kubernetes via kubeadm.
 # kubeadm init --apiserver-advertise-address=$NODE_IP
-kubeadm init --apiserver-advertise-address=$NODE_IP --apiserver-cert-extra-sans=$NODE_IP  --node-name $HOST_NAME --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR
+kubeadm init --apiserver-advertise-address=$MASTER_NODE_IP --apiserver-cert-extra-sans=$MASTER_NODE_IP  --node-name $HOST_NAME --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR
 
 # copying credentials to regular user - vagrant
 mkdir -p $HOME/.kube

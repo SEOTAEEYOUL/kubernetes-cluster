@@ -1,26 +1,31 @@
 #!/bin/bash
 
-# Install packages to allow apt to use a repository over HTTPS
-apt-get install -y apt-transport-https curl jq tmux
 
-# Add Kubernetes apt repository.
+# ---------------------------------------------------------------
+# apt 패키지 인덱스를 업데이트하고, Kubernetes apt 저장소가 필요로 하는 패키지를 설치합니다.
+sudo apt-get update -y
+sudo apt-get install -y apt-transport-https ca-certificates curl jq tmux
 
-## Download the Google Cloud public signing key
-curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+# 구글 클라우드의 공개 사이닝 키를 다운로드 한다.
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8S_VERSION}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-## Add the Kubernetes apt repository
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+# 쿠버네티스 apt 리포지터리를 추가한다.
+curl -fsSL https://pkgs.k8s.io/core:/stable:/${K8S_VERSION}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-## Update apt package index with the new repository
-apt-get update
+# apt 패키지를 업데이트하고, kubelet, kubeadm, kubectl을 설치합니다.
+sudo apt-get update -y
+sudo apt-get install -y kubelet kubeadm kubectl
 
-# Install kubelet, kubeadm and kubectl.
-# apt-get install -y kubelet=1.21.2-00 kubeadm=1.21.2-00 kubectl=1.21.2-00
-apt-get install -y kubelet kubeadm kubectl
+# 그리고 kubelet, kubeadm, kubectl이 자동으로 업그레이드 되는 일이 없게끔 버전을 고정합니다.
+sudo apt-mark hold kubelet kubeadm kubectl
+# ---------------------------------------------------------------
+ 
 
-# Hold the Kubernetes components at this specific version.
-apt-mark hold kubelet kubeadm kubectl
+ # conteaienrnetworking-plugins 설치
+sudo apt install containernetworking-plugins
 
-# Turn off swap for kubeadm.
-swapoff -a
-sed -i '/swap/d' /etc/fstab
+# Node-Shell (https://github.com/kvaps/kubectl-node-shell)
+curl -LO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell
+chmod +x ./kubectl-node_shell
+sudo mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell
+# ----------------------------------------------------------

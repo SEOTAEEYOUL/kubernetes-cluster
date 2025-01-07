@@ -1,41 +1,25 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-# Install packages to allow apt to use a repository over HTTPS.
-apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
 
-# containerd 설치를 위한 필수 구성 요성 설치 및 구성
-cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
-overlay
-br_netfilter
-EOF
+# Containerd 설치
+sudo apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
 
-sudo modprobe overlay
-sudo modprobe br_netfilter
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-# 필요한 sysctl 파라미터를 설정하면 재부팅 후에도 유지된다.
-cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.ipv4.ip_forward                 = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-EOF
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# 재부팅하지 않고 sysctl 파라미터 적용
-sudo sysctl --system
+sudo apt-get update -y
+sudo apt-get install -y containerd.io containernetworking-plugins
+sudo systemctl enable containerd --now
 
-# Install Containerd.
-apt install containerd
-mkdir -p /etc/containerd
+sudo cp /etc/containerd/config.toml /etc/containerd/config.toml.orig
 containerd config default | sudo tee /etc/containerd/config.toml
 
-# systemd cgroup 드라이버 사용
-# SystemdCgroup = false -> true 로 설정
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 sudo systemctl restart containerd
-
-# Restart and enable docker service.
-systemctl daemon-reload
-systemctl start containerd
-systemctl enable containerd
-
-# Hold containerd at this specific version.
-apt-mark hold containerd

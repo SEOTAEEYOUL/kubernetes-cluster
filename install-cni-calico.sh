@@ -1,28 +1,37 @@
 #!/bin/bash
 
+# master.k8s 라는 도메인으로 hosts 파일에 등록 함.
+sudo sh -c "echo $K8S_IP $K8S_HOST >> /etc/hosts"
 
-# Environment="KUBELET_NETWORK_ARGS=--network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
+# Install Containerd & K8S
+sudo apt-get update && sudo apt-get dist-upgrade -y
+sudo $SCRIPT_PATH/install-containerd.sh
+sudo $SCRIPT_PATH/install-k8s.sh $K8S_VERSION
 
-# Deploying Calico on an RBAC enabled cluster, first apply the ClusterRole and ClusterRoleBinding specs:
-# kubectl apply -f https://docs.projectcalico.org/v2.5/getting-started/kubernetes/installation/rbac.yaml
-# kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+
+
+# K8S Node Init
+sudo systemctl restart containerd
+sudo systemctl restart kubelet
+cat << EOF > conf.yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "${K8S_IP}"
+  bindPort: 6443
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: containerd
+EOF
+sudo kubeadm init --config=conf.yaml --v=5 > kubeinit.log && cat kubeinit.log
+
+# Copy K8S Config
+echo export KUBECONFIG=/etc/kubernetes/admin.conf >> $HOME/.bashrc
 
 # Install Calico
-# # Installing with the Kubernetes API datastore—50 nodes or less
-# curl -LO https://docs.projectcalico.org/v2.5/getting-started/kubernetes/installation/hosted/calico.yaml
-# curl https://docs.projectcalico.org/manifests/calico.yaml -O
-# kubectl apply -f calico.yaml
+sudo $SCRIPT_PATH/install-calico.sh
 
-
-
-# # Install Calico
-# kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-# kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
-
-
-# 2025-01-07
-curl -O https://raw.githubusercontent.com/gasida/KANS/main/kans3/calico-kans.yaml
-kubectl apply -f calico-kans.yaml
 curl -O https://github.com/projectcalico/calico/releases/download/v3.29.1/calicoctl-linux-amd64 -o calicoctl
 chmod +x calicoctl && mv calicoctl /usr/bin
 calicoctl version
