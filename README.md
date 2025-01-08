@@ -74,7 +74,7 @@ PS >
 | vagrant up | _Vagrantfile_ 에 적힌 내용에 따라 가상 머신 실행 | |  
 | vagrant ssh | ssh 접속 | id:vagrant / pw:vagrant |   
 
-### Vargrant 에서 사용할 환경변수 설정하기
+### Vagrant 에서 사용할 환경변수 설정하기
 - 환경변수 설정 파일 : `.env`
 ```bash
 # Base Image
@@ -101,6 +101,25 @@ SERVICE_CIDR="10.128.0.0/16"
 POD_CIDR="10.129.0.0/16"
 ```
 
+## Vagrant 사용 파일
+| 파일 | 설명 | 현재 구성 | 비고 |   
+|:---|:---|:---|:---|     
+| .env | vagrant 사용 환경변수 | ○ | |  
+| Vagrantfile | vagrant up 에 사용되는 기본 동작 정의 파일 | ○ | |  
+| pre.sh | cluster 구성 시 필요한 도구 및 설정 구성 Script | ○ | iptable, 방화벽 설정 |  
+| install-containerd.sh | CRI - containerd 설치 script | ○ | |  
+| install-kube-tools.sh | k8s tool 설치 script | ○ | |  
+| post.sh | 설치 후 정리 | ○ | |  
+| init-master-node.sh |  | ○ | |  
+| init-worker-node.sh | | ○ | |  
+| prepare-k8s-config-for-vagrant.sh | vagrant user 용 k8s 환경 설정 | ○ | |  
+| prepare-k8s-config.sh | root user 용 k8s 환경 설정 | ○ | |  
+| install-cni-calico.sh | CNI - Calico 설치 script | ○ | |  
+| install-cni-flannel.sh | CNI - flannel 설치 script | |  |  
+| install-docker.sh | CRI - docker 설치 script  | X |  |  
+| install-helm.sh | k8s package manager helm 설치 script | |  |  
+| install-dashboard.sh | k8s dashboard 설치 script | |  |  
+| install-ingress-controller.sh | k8s nginx ingress controller 설치 script | |  |  
 
 ## How to Run
 
@@ -149,17 +168,17 @@ $ vagrant ssh
 ## 가상머신의 상태 보기
 vagrant status
 ```
-vagrant status
+PS > vagrant status
 Current machine states:
 
-k8s-master                running (virtualbox)
-k8s-node-1                not created (virtualbox)
-k8s-node-2                not created (virtualbox)
-k8s-admin                 not created (virtualbox)
+k8s-master                not created (virtualbox)
+k8s-worker-1              not created (virtualbox)
+k8s-worker-2              not created (virtualbox)
 
 This environment represents multiple VMs. The VMs are all listed
 above with their current state. For more information about a specific
 VM, run `vagrant status NAME`.
+PS > 
 ```
 
 ## FAQ
