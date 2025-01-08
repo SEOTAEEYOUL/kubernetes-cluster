@@ -110,8 +110,8 @@ POD_CIDR="10.129.0.0/16"
 | install-containerd.sh | CRI - containerd 설치 script | ○ | master, worker 공통 |  
 | install-kube-tools.sh | k8s tool 설치 script | ○ | master, worker 공통 |  
 | post.sh | 설치 후 정리 | ○ | master, worker 공통 |  
-| init-master-node.sh |  | ○ | |  
-| init-worker-node.sh | | ○ | |  
+| init-master-node.sh | master node 구성 </br> - 초기화 </br> - k8s 사용 환경 설정 </br> - worker node join 을 위한 token 저장 - join.sh | ○ | |  
+| init-worker-node.sh |worker node 구성 </br> join.sh 수행 및 kubelet 재기동 | ○ | |  
 | prepare-k8s-config-for-vagrant.sh | vagrant user 용 k8s 환경 설정 | ○ | |  
 | prepare-k8s-config.sh | root user 용 k8s 환경 설정 | ○ | |  
 | install-cni-calico.sh | CNI - Calico 설치 script | ○ | |  

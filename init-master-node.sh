@@ -19,7 +19,7 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Hostname -i must return a routable address on second (non-NATed) network interface.
 # @see http://kubernetes.io/docs/getting-started-guides/kubeadm/#limitations
-sed "s/127.0.0.1.*m/$NODE_IP m/" -i /etc/hosts
+sed "s/127.0.0.1.*m/$MASTER_NODE_IP m/" -i /etc/hosts
 
 # Export k8s cluster token to an external file.
 OUTPUT_FILE=/vagrant/join.sh
