@@ -1,6 +1,9 @@
 # Kubernetes cluster
 Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 
+> [Container Runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)  
+> [Installing kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)  
+> [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl)  
 > [[K8S] Kubernetes 설치 (VirtualBox+Vagrant+K8S:v1.31)](https://tack0829.tistory.com/8)   
 
 ## Components Version
@@ -9,9 +12,12 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
    * Docker Version: 20.10.7~3-0 
    * containerd v1.4.6 :: recommaned
    * cri-o v1.21 (experimental: see CRI-O Note. Only on fedora, ubuntu and centos based OS)
-   * Kubelet Version: 1.32
-   * Kubectl Version: 1.32
-   * Kubeadm Version: 1.32
+   * Kubelet Version: 1.32.0-1.1
+   * Kubectl Version: 1.32.0-1.1
+   * Kubeadm Version: 1.32.0-1.1
+   * Kubernetes-cni Version : 1.6.0-1.1
+
+
 ### Network Plugin
    * cni-plugins v0.9.1
    * CNI: Flannel (Latest Version), calico v3.29.1
@@ -19,7 +25,7 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 ## Pre-requisites
 
  * **[Vagrant 2.4.3](https://www.vagrantup.com)**
- * **[Virtualbox 7.0.18](https://www.virtualbox.org)**   
+ * **[Virtualbox 7.0.18](https://www.virtualbox.org)**  -> 현재(2025.01.07) vagrant 에서 지원하는 버전
  * **[Discover Vagrant Boxes](https://app.vagrantup.com/boxes/search)**  
 
 #### python core 설치
@@ -29,6 +35,45 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 ```
 pip install pywin32
 ```
+
+### Dockershim은 쿠버네티스 릴리스 1.24부터 쿠버네티스 프로젝트에서 제거
+#### containerd
+- 환경 설정 파일 : /etc/containerd/config.toml
+- systemd cgroup 드라이버 환경 설정하기
+```
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  ...
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+```
+- 재기동 : sudo systemctl restart containerd
+
+#### CRI-O
+#### 도커엔진
+#### 미란티스 컨테이너 런타임
+
+### 커뮤니티 주도의 새로운 Kubernetes 패키지 저장소
+#### 새로운 저장소 정보
+- 도메인: pkgs.k8s.io
+- 지원 형식: Debian 및 RPM 패키지 모두 제공
+- 인프라: CloudFront CDN과 S3 버킷 기반
+- 플랫폼: OpenBuildService(OBS)를 통해 패키지 빌드 및 배포2
+#### 주요 특징
+- 저장소 구조에 대한 더 나은 통제 가능
+- cri-tools, kubernetes-cni 등 종속성에 대한 세밀한 제어
+- Kubernetes 사전 릴리스 패키지 게시 가능
+- Release Manager가 직접 패키지 게시 가능3
+#### 시간대별 변경사항
+- 2023년 8월 15일: 새로운 커뮤니티 관리 패키지 저장소 발표
+- 2023년 8월 31일: 기존 저장소 공식 지원 중단
+- 2023년 9월 13일: 기존 저장소 동결
+- 2024년 3월 4일: 기존 저장소 완전 제거4
+#### 지원 버전
+- Kubernetes v1.24.0 이상 버전부터 제공
+- 각 Kubernetes 마이너 버전별로 전용 패키지 저장소 구조 채택
+
+![k8s-1.32-vb.png](./img/k8s-1.32-vb.png)  
+
 
 ### Install the plugin for Vagrant to ability to use environment files.(and ...)
 ```
@@ -193,10 +238,6 @@ PS >
 
 ### **Hyper-V** 재 활성화 하기
 - RUN > CMD > bcdedit /set hypervisorlaunchtype auto, then reboot your machine.
-
-## Licensing
-
-[Apache License, Version 2.0](http://opensource.org/licenses/Apache-2.0).  
 
 ## windows kubectl 설치
 ```

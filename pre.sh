@@ -1,9 +1,12 @@
 #!/bin/bash
 
+# 필수 포트 확인
+sudo nc 127.0.0.1 6443 -v
+
 
 # Update apt registry.
-apt-get update
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl # software-properties-common
 
 # Install essential utilities
 apt-get install -y \
@@ -42,9 +45,18 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF
 
-sudo echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
+# sudo echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
+# sysctl params required by setup, params persist across reboots
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.ipv4.ip_forward = 1
+EOF
 
+# Apply sysctl params without reboot
 sysctl --system
+
+sysctl net.ipv4.ip_forward
+# ---------------------------------------------------------------
+
 
 
 # SWAP 제거, # Turn off swap for kubeadm.

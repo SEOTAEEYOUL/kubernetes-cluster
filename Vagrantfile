@@ -6,32 +6,36 @@ Vagrant.configure("2") do |config|
   config.vbguest.auto_update = true
   config.vbguest.installer_options = { allow_kernel_upgrade: true }
 
-#   # Add reload plugin configuration
-#   unless Vagrant.has_plugin?("vagrant-reload")
-#     system("vagrant plugin install vagrant-reload")
-#     puts "vagrant-reload plugin installed, please try again"
-#     exit
-#   end
+  # # Add reload plugin configuration
+  # unless Vagrant.has_plugin?("vagrant-reload")
+  #   system("vagrant plugin install vagrant-reload")
+  #   puts "vagrant-reload plugin installed, please try again"
+  #   exit
+  # end
+  config.vm.boot_timeout = 600  # 기본값 300초에서 600초로 증가
 
 
   # set constants
-  IMAGE_NAME = ENV['IMAGE_NAME']
-  MEMORY_SIZE_IN_GB = ENV['MEMORY_SIZE_IN_GB'].to_i
-  CPU_COUNT = ENV['CPU_COUNT'].to_i
-  MASTER_NODE_COUNT = ENV['MASTER_NODE_COUNT'].to_i
-  WORKER_NODE_COUNT = ENV['WORKER_NODE_COUNT'].to_i
+  IMAGE_NAME           = ENV['IMAGE_NAME']
+  MEMORY_SIZE_IN_GB    = ENV['MEMORY_SIZE_IN_GB'].to_i
+  CPU_COUNT            = ENV['CPU_COUNT'].to_i
+  MASTER_NODE_COUNT    = ENV['MASTER_NODE_COUNT'].to_i
+  WORKER_NODE_COUNT    = ENV['WORKER_NODE_COUNT'].to_i
   MASTER_NODE_IP_START = ENV['MASTER_NODE_IP_START']
   WORKER_NODE_IP_START = ENV['WORKER_NODE_IP_START']
-  BOX_VERSION = ENV['BOX_VERSION']
+  BOX_VERSION          = ENV['BOX_VERSION']
+  K8S_VERSION          = ENV['K8S_VERSION']
+
+  MEMORY_IN_MB = (MEMORY_SIZE_IN_GB * 1024).to_i  # MB 단위로 변환
 
   # 2021-08-11 추가 #########################################
   # 192.168.120.XXX 192.168.232.XXX" -- 차단 대역대
-  APISERVER_IP="192.128.0.11"
-  K8S_USER="vagrant"
-  VAGRANT_ROOT = File.dirname(File.expand_path(__FILE__))
-  file_to_disk = File.join(VAGRANT_ROOT, 'filename.vdi')
-  CLUSTER_CIDR="10.128.0.0/16"
-  POD_CIDR="10.129.0.0/16"
+  APISERVER_IP   = "192.128.0.11"
+  K8S_USER       = "vagrant"
+  VAGRANT_ROOT   = File.dirname(File.expand_path(__FILE__))
+  file_to_disk   = File.join(VAGRANT_ROOT, 'filename.vdi')
+  CLUSTER_CIDR   = "10.128.0.0/16"
+  POD_CIDR       = "10.129.0.0/16"
   # SERVICE_CIDR="10.128.0.0/12
   #########################################################
 
@@ -39,13 +43,15 @@ Vagrant.configure("2") do |config|
   master_node_ip = ''
   worker_node_ip = ''
 
-  config.vm.box = IMAGE_NAME
+  config.vm.box         = IMAGE_NAME
   config.vm.box_version = BOX_VERSION # Ensures compatibility with VirtualBox 7.1.4
 
   config.vm.provider "virtualbox" do |vb|
+    vb.gui = true  # GUI 모드 활성화로 부팅 과정 모니터링 가능
 
-    vb.memory = 1024 * MEMORY_SIZE_IN_GB
-    vb.cpus = CPU_COUNT
+    # Customize the amount of memory on the VM:
+    vb.memory = [MEMORY_IN_MB, 4].max  # 최소 4MB 보장, 최소 4MB에서 최대 2097152MB(약 2TB) 사이여야 합니다.
+    vb.cpus   = CPU_COUNT
     vb.customize ["modifyvm", :id, "--groups", "/Kubernetes Cluster"]
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
@@ -60,7 +66,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
                     path: "install-kube-tools.sh",
                     env: {
-                        "K8S_VERSION" => "1.32"
+                        "K8S_VERSION" => K8S_VERSION
                     }
 
   config.vm.provision "shell", path: "post.sh"

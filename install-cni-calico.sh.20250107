@@ -21,8 +21,14 @@
 
 
 # 2025-01-07
-curl -O https://raw.githubusercontent.com/gasida/KANS/main/kans3/calico-kans.yaml
-kubectl apply -f calico-kans.yaml
+# curl -O https://raw.githubusercontent.com/gasida/KANS/main/kans3/calico-kans.yaml
+# kubectl apply -f calico-kans.yaml
+
+curl https://calico-v3-25.netlify.app/archive/v3.25/manifests/calico.yaml -O --insecure
+sed -i -e "s|# - name: CALICO_IPV4POOL_CIDR|- name: CALICO_IPV4POOL_CIDR|g" calico.yaml
+kubectl apply -f calico.yaml
+rm -f ./calico.yaml
+출처: https://tack0829.tistory.com/8 [기도의 IT 스토리:티스토리]
 curl -O https://github.com/projectcalico/calico/releases/download/v3.29.1/calicoctl-linux-amd64 -o calicoctl
 chmod +x calicoctl && mv calicoctl /usr/bin
 calicoctl version
