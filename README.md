@@ -19,7 +19,7 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 ## Pre-requisites
 
  * **[Vagrant 2.4.3](https://www.vagrantup.com)**
- * **[Virtualbox 7.1.4](https://www.virtualbox.org)**   
+ * **[Virtualbox 7.0.18](https://www.virtualbox.org)**   
  * **[Discover Vagrant Boxes](https://app.vagrantup.com/boxes/search)**  
 
 #### python core 설치
