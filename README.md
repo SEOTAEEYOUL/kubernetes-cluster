@@ -4,11 +4,10 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 > [[K8S] Kubernetes 설치 (VirtualBox+Vagrant+K8S:v1.31)](https://tack0829.tistory.com/8)   
 
 ## Components Version
-> [boxes - bento/ubuntu-22.04](https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-22.04)
-### Image: bento/ubuntu-22.04
+### Image: [bento/ubuntu-22.04](https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-22.04)
 ### Core
-   * Docker Version: 20.10.7~3-0 :: recommaned
-   * containerd v1.4.6
+   * Docker Version: 20.10.7~3-0 
+   * containerd v1.4.6 :: recommaned
    * cri-o v1.21 (experimental: see CRI-O Note. Only on fedora, ubuntu and centos based OS)
    * Kubelet Version: 1.32.2-00
    * Kubectl Version: 1.32.2-00
