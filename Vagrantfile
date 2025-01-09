@@ -25,6 +25,7 @@ Vagrant.configure("2") do |config|
   WORKER_NODE_IP_START = ENV['WORKER_NODE_IP_START']
   BOX_VERSION          = ENV['BOX_VERSION']
   K8S_VERSION          = ENV['K8S_VERSION']
+  CRIO_VERSION         = ENV['CRIO_VERSION']
 
   MEMORY_IN_MB = (MEMORY_SIZE_IN_GB * 1024).to_i  # MB 단위로 변환
 
@@ -62,9 +63,15 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", path: "pre.sh"
 
   # config.vm.provision "shell", path: "install-docker.sh"
-  config.vm.provision "shell", path: "install-containerd.sh"
+  # config.vm.provision "shell", path: "install-cri-containerd.sh"
   config.vm.provision "shell",
-                    path: "install-kube-tools.sh",
+                    path: "install-cri-crio.sh",
+                    env: {
+                        "K8S_VERSION"  => K8S_VERSION,
+                        "CRIO_VERSION" => CRIO_VERSION
+                    }
+  config.vm.provision "shell",
+                    path: "install-k8s-tools.sh",
                     env: {
                         "K8S_VERSION" => K8S_VERSION
                     }
@@ -87,9 +94,9 @@ Vagrant.configure("2") do |config|
                         path: "init-master-node.sh",
                         env: {
                             "MASTER_NODE_IP" => "#{master_node_ip}",
-                            "APISERVER_IP" => APISERVER_IP,
-                            "POD_CIDR" => POD_CIDR,
-                            "CLUSTER_CIDR" => CLUSTER_CIDR
+                            "APISERVER_IP"   => APISERVER_IP,
+                            "POD_CIDR"       => POD_CIDR,
+                            "CLUSTER_CIDR"   => CLUSTER_CIDR
                         }
 
       # prepare kubectl for vagrant user
@@ -106,10 +113,10 @@ Vagrant.configure("2") do |config|
       master.vm.provision "shell",
                         path: "install-cni-calico.sh",
                         env: {
-                            "SCRIPT_PATH" => "./",
+                            "SCRIPT_PATH"    => "./",
                             "MASTER_NODE_IP" => "#{master_node_ip}",
-                            "APISERVER_IP" => APISERVER_IP,
-                            "K8S_HOST" => "master.k8s"
+                            "APISERVER_IP"   => APISERVER_IP,
+                            "K8S_HOST"       => "master.k8s"
                         }
 
     end

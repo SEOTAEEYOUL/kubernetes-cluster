@@ -19,11 +19,14 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 
 
 ### Network Plugin
-   * cni-plugins v0.9.1
+> [libcni releases](https://github.com/containernetworking/cni/releases)  
+   * cni-plugins v1.2.3
    * CNI: Flannel (Latest Version), **calico** v3.29.1
 
 ### 커뮤니티 주도의 새로운 Kubernetes 패키지 저장소
    * pkgs.k8s.io
+
+---
 
 ## Pre-requisites
 
@@ -39,7 +42,7 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 pip install pywin32
 ```
 
-### Dockershim은 쿠버네티스 릴리스 1.24부터 쿠버네티스 프로젝트에서 제거
+### [컨테이너 런타임](https://kubernetes.io/ko/docs/setup/production-environment/container-runtimes/) - Dockershim은 쿠버네티스 릴리스 1.24부터 쿠버네티스 프로젝트에서 제거
 #### containerd
 - 환경 설정 파일 : /etc/containerd/config.toml
 - systemd cgroup 드라이버 환경 설정하기
@@ -51,9 +54,20 @@ pip install pywin32
 ```
 - 재기동 : sudo systemctl restart containerd
 
-#### CRI-O
+#### [CRI-O](https://github.com/cri-o/packaging/blob/main/README.md#usage)
+- 환경 설정 파일 : /etc/crio/crio.conf.d/02-cgroup-manager.conf
+- systemd cgroup 드라이버 환경 설정하기
+```
+```
+[crio.runtime]
+conmon_cgroup = "pod"
+cgroup_manager = "cgroupfs"
+```
+```
+- 재기동 : sudo systemctl start crio.service
+
 #### 도커엔진
-#### 미란티스 컨테이너 런타임
+#### 미란티스 컨테이너 런타임(MCR) - 상용
 
 ### 커뮤니티 주도의 새로운 Kubernetes 패키지 저장소
 #### 새로운 저장소 정보
