@@ -6,21 +6,24 @@ Kubeadm으로 Kubernetes 클러스터를 구성을 위한 vagrant 스크립트
 > [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl)  
 > [[K8S] Kubernetes 설치 (VirtualBox+Vagrant+K8S:v1.31)](https://tack0829.tistory.com/8)   
 
-## Components Version
+## 적용 Components (굵은 글씨) 및 Version 
 ### Image: [bento/ubuntu-22.04](https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-22.04)
 ### Core
    * Docker Version: 20.10.7~3-0 
-   * containerd v1.4.6 :: recommaned
+   * **containerd** v1.4.6 :: recommaned
    * cri-o v1.21 (experimental: see CRI-O Note. Only on fedora, ubuntu and centos based OS)
-   * Kubelet Version: 1.32.0-1.1
-   * Kubectl Version: 1.32.0-1.1
-   * Kubeadm Version: 1.32.0-1.1
-   * Kubernetes-cni Version : 1.6.0-1.1
+   * **Kubelet** Version: 1.32.0-1.1
+   * **Kubectl** Version: 1.32.0-1.1
+   * **Kubeadm** Version: 1.32.0-1.1
+   * **Kubernetes-cni** Version : 1.6.0-1.1
 
 
 ### Network Plugin
    * cni-plugins v0.9.1
-   * CNI: Flannel (Latest Version), calico v3.29.1
+   * CNI: Flannel (Latest Version), **calico** v3.29.1
+
+### 커뮤니티 주도의 새로운 Kubernetes 패키지 저장소
+   * pkgs.k8s.io
 
 ## Pre-requisites
 
