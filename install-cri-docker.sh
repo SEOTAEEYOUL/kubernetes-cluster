@@ -1,37 +1,41 @@
 #!/bin/bash
 
-# Install packages to allow apt to use a repository over HTTPS.
-apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Add Docker apt repository.
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt-get update
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
 
-# Install Docker CE.
-apt-get install -y \
-  containerd.io=1.4.6-1 \
-  docker-ce=5:20.10.7~3-0~ubuntu-$(lsb_release -cs) \
-  docker-ce-cli=5:20.10.7~3-0~ubuntu-$(lsb_release -cs)
+# Install the Docker packages.
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Setup daemon.
-cat > /etc/docker/daemon.json <<EOF
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
-  "storage-driver": "overlay2"
-}
-EOF
 
-mkdir -p /etc/systemd/system/docker.service.d
+# # Setup daemon.
+# cat > /etc/docker/daemon.json <<EOF
+# {
+#   "exec-opts": ["native.cgroupdriver=systemd"],
+#   "log-driver": "json-file",
+#   "log-opts": {
+#     "max-size": "100m"
+#   },
+#   "storage-driver": "overlay2"
+# }
+# EOF
 
-# Restart and enable docker service.
-systemctl daemon-reload
-systemctl start docker
-systemctl enable docker
+# mkdir -p /etc/systemd/system/docker.service.d
 
-# Hold Docker at this specific version.
-apt-mark hold docker-ce
+# # Restart and enable docker service.
+# systemctl daemon-reload
+# systemctl start docker
+# systemctl enable docker
+
+# # Hold Docker at this specific version.
+# apt-mark hold docker-ce

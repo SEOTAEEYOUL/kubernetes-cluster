@@ -55,6 +55,7 @@ pip install pywin32
 - 재기동 : sudo systemctl restart containerd
 
 #### [CRI-O](https://github.com/cri-o/packaging/blob/main/README.md#usage)
+> [CRI-O Packaging](https://github.com/cri-o/packaging/blob/main/README.md#usage)
 - 환경 설정 파일 : /etc/crio/crio.conf.d/02-cgroup-manager.conf
 - systemd cgroup 드라이버 환경 설정하기
 ```
@@ -66,7 +67,18 @@ cgroup_manager = "cgroupfs"
 ```
 - 재기동 : sudo systemctl start crio.service
 
-#### 도커엔진
+#### [도커엔진](https://kubernetes.io/ko/docs/setup/production-environment/container-runtimes/#docker)
+> [Install Docker Engine on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+- 환경 설정 파일 : /etc/crio/crio.conf.d/02-cgroup-manager.conf
+- systemd cgroup 드라이버 환경 설정하기
+```
+```
+[crio.runtime]
+conmon_cgroup = "pod"
+cgroup_manager = "cgroupfs"
+```
+```
+- 재기동 : sudo systemctl start crio.service
 #### 미란티스 컨테이너 런타임(MCR) - 상용
 
 ### 커뮤니티 주도의 새로운 Kubernetes 패키지 저장소
