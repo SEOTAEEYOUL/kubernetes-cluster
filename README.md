@@ -168,8 +168,8 @@ POD_CIDR="10.129.0.0/16"
 | .env | vagrant 사용 환경변수 | ○ | |  
 | Vagrantfile | vagrant up 에 사용되는 기본 동작 정의 파일 | ○ | |  
 | pre.sh | cluster 구성 시 필요한 도구 및 설정 구성 Script </br> iptable, 방화벽 설정 포함 | ○ | master, worker 공통 |  
-| install-containerd.sh | CRI - containerd 설치 script | ○ | master, worker 공통 |  
-| install-kube-tools.sh | k8s tool 설치 script | ○ | master, worker 공통 |  
+| install-cri-containerd.sh | CRI - containerd 설치 script | ○ | master, worker 공통 |  
+| install-k8s-tools.sh | k8s tool 설치 script | ○ | master, worker 공통 |  
 | post.sh | 설치 후 정리 | ○ | master, worker 공통 |  
 | init-master-node.sh | master node 구성 </br> - 초기화 </br> - k8s 사용 환경 설정 </br> - worker node join 을 위한 token 저장 - join.sh | ○ | |  
 | init-worker-node.sh |worker node 구성 </br> join.sh 수행 및 kubelet 재기동 | ○ | |  
@@ -177,10 +177,11 @@ POD_CIDR="10.129.0.0/16"
 | prepare-k8s-config.sh | root user 용 k8s 환경 설정 | ○ | |  
 | install-cni-calico.sh | CNI - Calico 설치 script | ○ | |  
 | install-cni-flannel.sh | CNI - flannel 설치 script | X |  |  
-| install-docker.sh | CRI - docker 설치 script  | X |  |  
+| install-cri-crio.sh | CRI - CRI-O 설치 script  | X |  |  
+| install-cri-docker.sh | CRI - docker 설치 script  | X |  |  
 | install-helm.sh | k8s package manager helm 설치 script | X |  |  
-| install-dashboard.sh | k8s dashboard 설치 script | X |  |  
-| install-ingress-controller.sh | k8s nginx ingress controller 설치 script | X |  |  
+| install-k8s-dashboard.sh | k8s dashboard 설치 script | X |  |  
+| install-k8s-ingress-controller.sh | k8s nginx ingress controller 설치 script | X |  |  
 
 ## How to Run
 

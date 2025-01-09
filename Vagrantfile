@@ -63,13 +63,15 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", path: "pre.sh"
 
   # config.vm.provision "shell", path: "install-docker.sh"
-  # config.vm.provision "shell", path: "install-cri-containerd.sh"
-  config.vm.provision "shell",
-                    path: "install-cri-crio.sh",
-                    env: {
-                        "K8S_VERSION"  => K8S_VERSION,
-                        "CRIO_VERSION" => CRIO_VERSION
-                    }
+  config.vm.provision "shell", path: "install-cri-containerd.sh"
+  
+  # config.vm.provision "shell",
+  #                   path: "install-cri-crio.sh",
+  #                   env: {
+  #                       "K8S_VERSION"  => K8S_VERSION,
+  #                       "CRIO_VERSION" => CRIO_VERSION
+  #                   }
+  
   config.vm.provision "shell",
                     path: "install-k8s-tools.sh",
                     env: {
